@@ -15,3 +15,4 @@ p = Product(
 
 print(p.info())
 print(f"Со скидкой 25%: {p.price_with_discount(25):.2f} руб.")
+print(f"Товар в наличии: {p.is_available()}")

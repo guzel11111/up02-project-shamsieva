@@ -16,21 +16,45 @@ class Product:
         self.photo = photo
 
     def total(self):
-        """Общая стоимость товара на складе."""
         return self.price * self.quantity
 
     def price_with_discount(self, discount_percent):
-        """Цена товара со скидкой."""
         return self.price * (1 - discount_percent / 100)
 
     def indicator(self):
-        """Остаток товара: много или мало."""
         return "много" if self.quantity > 5 else "мало"
 
     def info(self):
-        """Информация о товаре."""
         return (
             f"{self.name} ({self.category}): "
             f"{self.price} руб. × {self.quantity} = "
             f"{self.total()} руб. ({self.indicator()})"
         )
+
+    def is_available(self):
+        """Проверяет наличие товара."""
+        return self.quantity > 0
+
+
+class Order:
+    """Класс Заказ."""
+
+    def __init__(self, order_id, date, client, product, quantity):
+        self.id = order_id
+        self.date = date
+        self.client = client
+        self.product = product
+        self.quantity = quantity
+
+    def total(self):
+        """Стоимость заказа."""
+        return self.product.price * self.quantity
+
+    def info(self):
+        """Информация о заказе."""
+        return (
+            f"Заказ №{self.id} от {self.date}: "
+            f"{self.client} — {self.product.name} × {self.quantity}; "
+            f"сумма: {self.total()} руб."
+        )
+
