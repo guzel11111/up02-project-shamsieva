@@ -1,89 +1,92 @@
 
-"""Загрузка и вывод каталога товаров из PostgreSQL."""
+"""Загрузка товаров из PostgreSQL в объекты Product."""
 
 import psycopg
 from config import DB_CONFIG
+from models import Product
 
 
 def get_all_products():
     with psycopg.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, категория, наименование, срок_годности,
+                SELECT id, наименование, категория, срок_годности,
                        цена, количество, фото
                 FROM "Товар"
                 ORDER BY id
             """)
-            return cur.fetchall()
+            rows = cur.fetchall()
+
+    return [
+        Product(
+            product_id=row[0],
+            name=row[1],
+            category=row[2],
+            expiry_date=row[3],
+            price=row[4],
+            quantity=row[5],
+            photo=row[6]
+        )
+        for row in rows
+    ]
 
 
 def get_products_by_category(category):
     with psycopg.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, категория, наименование, срок_годности,
+                SELECT id, наименование, категория, срок_годности,
                        цена, количество, фото
                 FROM "Товар"
                 WHERE категория = %s
                 ORDER BY id
             """, (category,))
-            return cur.fetchall()
+            rows = cur.fetchall()
+
+    return [
+        Product(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+        for row in rows
+    ]
 
 
 def get_products_low_stock():
     with psycopg.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, категория, наименование, срок_годности,
+                SELECT id, наименование, категория, срок_годности,
                        цена, количество, фото
                 FROM "Товар"
                 WHERE количество <= 3
                 ORDER BY id
             """)
-            return cur.fetchall()
+            rows = cur.fetchall()
+
+    return [
+        Product(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+        for row in rows
+    ]
 
 
-def get_categories():
-    with psycopg.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT DISTINCT категория
-                FROM "Товар"
-                ORDER BY категория
-            """)
-            return [row[0] for row in cur.fetchall()]
-
-
-def print_catalog(products):
-    print(f"\n{'=' * 60}")
-    print(f"КАТАЛОГ: {len(products)} товаров")
-    print("=" * 60)
+def print_catalog_with_highlight(products):
+    print(f"\n{'=' * 70}")
+    print(f"КАТАЛОГ ({len(products)} товаров)")
+    print("=" * 70)
 
     for p in products:
-        product_id, category, name, expiry_date, price, quantity, photo = p
+        highlight = "⚠️" if p.quantity <= 3 else "  "
+        print(f"{highlight} {p.info()}")
+        print(f"   Срок годности: {p.expiry_date}")
+        print("-" * 70)
 
-        indicator = "много" if quantity > 5 else "мало"
-        warning = "⚠️" if quantity <= 3 else "  "
-
-        print(f"{warning} {product_id}. {name} ({category})")
-        print(f"   Цена: {price} руб. | Остаток: {quantity} шт. ({indicator})")
-        print(f"   Срок годности: {expiry_date}")
-        print("-" * 60)
+    print("=" * 70)
 
 
 if __name__ == "__main__":
-    print("1. Все товары")
-    print_catalog(get_all_products())
+    print("1. Все товары:")
+    print_catalog_with_highlight(get_all_products())
 
-    print("\n2. Категории:")
-    for category in get_categories():
-        print(f"   - {category}")
+    print("\n2. Товары категории «Молочное»:")
+    print_catalog_with_highlight(get_products_by_category("Молочное"))
 
-    print("\n3. Товары с низким остатком (<= 3):")
-    print_catalog(get_products_low_stock())
-
-    print("\n4. Пример фильтрации по категории:")
-    categories = get_categories()
-    if categories:
-        print(f"Категория: {categories[0]}")
-        print_catalog(get_products_by_category(categories[0]))
+    print("\n3. Товары с низким остатком (≤ 3):")
+    print_catalog_with_highlight(get_products_low_stock())
